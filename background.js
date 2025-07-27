@@ -1,1 +1,1 @@
-// Required by manifest, but not used in this minimal example
+// This file is required by the manifest.json, but no background scripts are needed for this extension's functionality.

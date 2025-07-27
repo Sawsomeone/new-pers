@@ -1,18 +1,23 @@
 body {
-  font-family: Arial, sans-serif;
-  width: 300px;
-  padding: 10px;
+    font-family: 'Inter', sans-serif;
+    width: 500px; /* Set a fixed width for the popup */
 }
-button {
-  margin-top: 10px;
-  padding: 8px;
-  background-color: #1a73e8;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+.loader {
+    border-top-color: #3498db;
+    animation: spin 1s linear infinite;
 }
-#output {
-  margin-top: 12px;
-  white-space: pre-wrap;
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+.tab-active {
+    background-color: #3B82F6;
+    color: white;
+}
+.tab-inactive {
+    background-color: #E5E7EB;
+    color: #4B5563;
+}
+.dark .tab-inactive {
+    background-color: #374151;
+    color: #D1D5DB;
 }
