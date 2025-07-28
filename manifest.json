@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "AI Content Analyzer",
+  "name": "New Perspectives",
   "version": "1.0",
-  "description": "Analyzes content from the current URL or pasted HTML using AI.",
+  "description": "Get a new perspective on the content of the current page.",
   "permissions": [
     "activeTab",
     "storage",
