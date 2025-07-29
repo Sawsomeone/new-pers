@@ -8,18 +8,49 @@ document.addEventListener('DOMContentLoaded', function () {
     const loader = document.getElementById('loader');
     const errorContainer = document.getElementById('error');
     const errorMessage = document.getElementById('errorMessage');
-    const summaryContainer = document.getElementById('summary');
+    const biasAnalysisContainer = document.getElementById('bias-analysis');
+    const leftBiasCount = document.getElementById('left-bias-count');
+    const rightBiasCount = document.getElementById('right-bias-count');
+    const leftBiases = document.getElementById('left-biases');
+    const rightBiases = document.getElementById('right-biases');
+    const factualStatementsCount = document.getElementById('factual-statements-count');
+    const factualStatements = document.getElementById('factual-statements');
     const articleLinkContainer = document.getElementById('articleLinkContainer');
     const articleLink = document.getElementById('articleLink');
     const customPrompt = document.getElementById('customPrompt');
     const customAnalyzeBtn = document.getElementById('customAnalyzeBtn');
     const biasSliderContainer = document.getElementById('biasSliderContainer');
     const sliderThumb = document.getElementById('slider-thumb');
+    const showExtractedTextBtn = document.getElementById('showExtractedTextBtn');
+    const extractedTextContainer = document.getElementById('extractedText');
+
+    let extractedArticleText = '';
 
     // --- Event Listeners ---
     settingsBtn.addEventListener('click', () => showView(true));
     backBtn.addEventListener('click', () => showView(false));
     customAnalyzeBtn.addEventListener('click', () => startAnalysis(true));
+    showExtractedTextBtn.addEventListener('click', () => {
+        if (extractedTextContainer.classList.contains('hidden')) {
+            extractedTextContainer.textContent = extractedArticleText;
+            extractedTextContainer.classList.remove('hidden');
+            showExtractedTextBtn.textContent = 'Hide Extracted Text';
+        } else {
+            extractedTextContainer.classList.add('hidden');
+            showExtractedTextBtn.textContent = 'Show Extracted Text';
+        }
+    });
+
+    biasAnalysisContainer.addEventListener('click', (event) => {
+        const toggleButton = event.target.closest('.bias-dropdown-toggle');
+        if (toggleButton) {
+            const targetId = toggleButton.dataset.target;
+            const targetContent = document.getElementById(targetId);
+            if (targetContent) {
+                targetContent.classList.toggle('hidden');
+            }
+        }
+    });
 
     // --- Core Functions ---
     async function startAnalysis(isCustom = false) {
@@ -28,12 +59,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         setLoadingState(true, isCustom);
         hideError();
-        summaryContainer.classList.add('hidden');
         articleLinkContainer.classList.add('hidden');
         biasSliderContainer.classList.add('hidden');
+        biasAnalysisContainer.classList.add('hidden');
+        showExtractedTextBtn.classList.add('hidden');
+        extractedTextContainer.classList.add('hidden');
 
         try {
             const { article, url } = await getContentFromActiveTab();
+            extractedArticleText = article; // Store the extracted text
 
             if (article) {
                 let prompt;
@@ -50,16 +84,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 
                 const response = await getAiSummary(prompt);
-                const { summary, bias } = parseAiResponse(response);
+                // Add this line for debugging to see the raw response from the API
+                console.log("Raw Gemini Response:", response); 
 
-                summaryContainer.innerHTML = markdownToHtml(summary);
-                summaryContainer.classList.remove('hidden');
-                
+                const { bias, left, right, factual } = parseAiResponse(response);
+
+                updateBiasDropdowns(left, right, factual);
+                biasAnalysisContainer.classList.remove('hidden');
+
                 updateBiasSlider(bias);
                 biasSliderContainer.classList.remove('hidden');
 
                 articleLink.href = url;
                 articleLinkContainer.classList.remove('hidden');
+                showExtractedTextBtn.classList.remove('hidden');
             } else {
                 showError('Could not retrieve content from the page. The page might be protected or empty.');
             }
@@ -75,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (customText) {
             return `${customText}\n\nContent to analyze:\n\n${content}`;
         }
-        return `Analyze the following content and provide a detailed breakdown of its political biases. Structure your response in three sections: "Left-Wing Biases", "Right-Wing Biases", and "Factual Statements". Under each heading, list the specific points or statements from the article that support your analysis. At the end of your response, include a political bias score on a scale of 0 (far left) to 100 (far right) in the format "BIAS_SCORE: [score]". Content to analyze:\n\n${content}`;
+        return `Analyze the following content for political biases. Provide your analysis in three sections: "Left-Wing Biases", "Right-Wing Biases", and "Factual Statements". Under each heading, provide a bulleted list of specific points or statements from the article that support your analysis. At the end of your response, include a political bias score on a scale of 0 (far left) to 100 (far right) in the format "BIAS_SCORE: [score]". Do not include any other text or summary. Content to analyze:\n\n${content}`;
     }
 
     async function getContentFromActiveTab() {
@@ -147,17 +185,17 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-function markdownToHtml(text) {
-        // Bold
-        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        // Italics
-        text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
-        // Bullets
-        text = text.replace(/^\s*[\*-]\s(.*)/gm, '<li>$1</li>');
-        text = text.replace(/<\/li><li>/g, '</li>\n<li>'); // Add newlines between list items for the next replace
-        text = text.replace(/(<li>.*<\/li>)/gs, '<ul>$&</ul>');
-        // Newlines
-        return text.replace(/\n/g, '<br>');
+    function markdownToHtml(text) {
+            // Bold
+            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            // Italics
+            text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            // Bullets
+            text = text.replace(/^\s*[\*-]\s(.*)/gm, '<li>$1</li>');
+            text = text.replace(/<\/li><li>/g, '</li>\n<li>'); // Add newlines between list items for the next replace
+            text = text.replace(/(<li>.*<\/li>)/gs, '<ul>$&</ul>');
+            // Newlines
+            return text.replace(/\n/g, '<br>');
     }
     // --- UI Helper Functions ---
     function setLoadingState(isLoading, isCustom) {
@@ -183,15 +221,61 @@ function markdownToHtml(text) {
     }
 
     function parseAiResponse(response) {
-        const biasMatch = response.match(/BIAS_SCORE: (\d+)/);
-        const bias = biasMatch ? parseInt(biasMatch[1], 10) : 50; // Default to center if not found
-        const summary = response.replace(/BIAS_SCORE: \d+/, '').trim();
-        return { summary, bias };
+        // Add debugging to see the raw response
+        console.log("Full AI Response for parsing:", response);
+        
+        // Extract bias score - handle both formats
+        const biasMatch = response.match(/bias_score:\s*(\d+)/i);
+        const bias = biasMatch ? parseInt(biasMatch[1], 10) : 50;
+
+        // Updated regex patterns to handle markdown bold headers (**Header**) and various formats
+        const leftMatch = response.match(/\*\*\s*left-?(?:wing)?\s*biases?\s*\*\*([\s\S]*?)(?:\*\*\s*right-?(?:wing)?\s*biases?|\*\*\s*factual\s*statements?|bias_score:|$)/i);
+        const rightMatch = response.match(/\*\*\s*right-?(?:wing)?\s*biases?\s*\*\*([\s\S]*?)(?:\*\*\s*factual\s*statements?|bias_score:|$)/i);
+        const factualMatch = response.match(/\*\*\s*factual\s*statements?\s*\*\*([\s\S]*?)(?:bias_score:|$)/i);
+
+        // Debug the matches
+        console.log("Left match:", leftMatch);
+        console.log("Right match:", rightMatch);
+        console.log("Factual match:", factualMatch);
+
+        const parseBullets = (text) => {
+            if (!text) return []; // If the section is empty, return an empty array.
+            console.log("Parsing bullets from text:", text);
+            // Use regex to find all lines that start with a bullet (*, •, or -).
+            const matches = text.trim().matchAll(/^\s*[*•-]\s*(.*)$/gm);
+            // Return an array of the captured text for each bullet point.
+            const result = Array.from(matches, match => match[1].trim());
+            console.log("Parsed bullets result:", result);
+            return result;
+        };
+
+        const leftBiases = parseBullets(leftMatch ? leftMatch[1] : '');
+        const rightBiases = parseBullets(rightMatch ? rightMatch[1] : '');
+        const factualStatements = parseBullets(factualMatch ? factualMatch[1] : '');
+
+        console.log("Final parsed results:", { bias, left: leftBiases, right: rightBiases, factual: factualStatements });
+        return { bias, left: leftBiases, right: rightBiases, factual: factualStatements };
     }
 
     function updateBiasSlider(bias) {
         const percentage = Math.max(0, Math.min(100, bias));
         sliderThumb.style.left = `${percentage}%`;
+    }
+
+    function updateBiasDropdowns(left, right, factual) {
+        leftBiasCount.textContent = left.length;
+        rightBiasCount.textContent = right.length;
+        factualStatementsCount.textContent = factual.length;
+
+        // Function to create a bulleted list from an array of items.
+        const createList = (items) => {
+            if (items.length === 0) return '<p>No items found.</p>'; // Show a message if empty.
+            return '<ul>' + items.map(item => `<li>${item}</li>`).join('') + '</ul>';
+        };
+
+        leftBiases.innerHTML = createList(left);
+        rightBiases.innerHTML = createList(right);
+        factualStatements.innerHTML = createList(factual);
     }
 
     // --- Initial Load ---

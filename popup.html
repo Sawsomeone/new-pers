@@ -28,7 +28,29 @@
                 <strong>Error:</strong>
                 <span id="errorMessage"></span>
             </div>
-            <div id="summary" class="summary-content hidden"></div>
+            <div id="bias-analysis" class="hidden">
+                <div class="bias-dropdown">
+                    <button class="bias-dropdown-toggle" data-target="left-biases">
+                        <span class="bias-label">Left-Leaning Biases</span>
+                        <span class="bias-count" id="left-bias-count">0</span>
+                    </button>
+                    <div id="left-biases" class="bias-dropdown-content hidden"></div>
+                </div>
+                <div class="bias-dropdown">
+                    <button class="bias-dropdown-toggle" data-target="right-biases">
+                        <span class="bias-label">Right-Leaning Biases</span>
+                        <span class="bias-count" id="right-bias-count">0</span>
+                    </button>
+                    <div id="right-biases" class="bias-dropdown-content hidden"></div>
+                </div>
+                <div class="bias-dropdown">
+                    <button class="bias-dropdown-toggle" data-target="factual-statements">
+                        <span class="bias-label">Factual Statements</span>
+                        <span class="bias-count" id="factual-statements-count">0</span>
+                    </button>
+                    <div id="factual-statements" class="bias-dropdown-content hidden"></div>
+                </div>
+            </div>
             <div id="biasSliderContainer" class="bias-slider-container hidden">
                 <div class="bias-labels">
                     <span>Left</span>
@@ -42,6 +64,8 @@
             <div id="articleLinkContainer" class="article-link-container hidden">
                 <a id="articleLink" href="#" target="_blank" rel="noopener noreferrer">Read Original Article</a>
             </div>
+            <button id="showExtractedTextBtn" class="analyze-button hidden" style="margin-top: 10px;">Show Extracted Text</button>
+            <div id="extractedText" class="summary-content hidden" style="margin-top: 10px; max-height: 200px; overflow-y: auto;"></div>
         </div>
     </div>
 
